@@ -34,6 +34,8 @@ Q金的画布创作工作台源码，包含网页前端、Python 后端，以及
 
 桌面壳目录是可审阅的历史源码候选，不能将其视为已经重新打包并在新电脑验收的桌面发行版。
 
+GitHub Actions 源文件保留在 `.github/workflow-templates/`，当前未启用自动运行。启用时需使用具有工作流写权限的授权，将模板放回 `.github/workflows/`。
+
 ## 许可证
 
 本项目包含 DramaClaw 上游代码。使用与分发请遵守根目录 `NOTICE`、`LICENSES/`、`REUSE.toml` 和各组件的许可证说明。
