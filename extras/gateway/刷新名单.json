@@ -1,0 +1,216 @@
+{
+  "status": "已完成17项白名单审阅及候选纳入；运行源码原样复制，README与command为公开部署替换版",
+  "sourceAlias": "workspace/doubao-work-api",
+  "files": [
+    {
+      "path": ".gitignore",
+      "bytes": 50,
+      "mtime": "2026-11-04T13:07:13.983Z",
+      "contentRead": true,
+      "copied": true,
+      "candidateBytes": 50,
+      "sourceSha256": "9c331c9f20719912be32f578cf29b278529bc8203d24e04f85a4d68214c97fac",
+      "candidateSha256": "9c331c9f20719912be32f578cf29b278529bc8203d24e04f85a4d68214c97fac",
+      "candidateModified": false
+    },
+    {
+      "path": "package.json",
+      "bytes": 429,
+      "mtime": "2026-11-04T13:10:44.184Z",
+      "contentRead": true,
+      "copied": true,
+      "candidateBytes": 429,
+      "sourceSha256": "e6cc410bd37450e41b669404c1eaba0e070d3d8af010af6117ac2ddd6196ce88",
+      "candidateSha256": "e6cc410bd37450e41b669404c1eaba0e070d3d8af010af6117ac2ddd6196ce88",
+      "candidateModified": false
+    },
+    {
+      "path": "server.mjs",
+      "bytes": 1634,
+      "mtime": "2026-11-04T13:12:07.403Z",
+      "contentRead": true,
+      "copied": true,
+      "candidateBytes": 1634,
+      "sourceSha256": "b5aed7737c020c13460b930f38880387ea5d9509e89263e98c6728843f4b387a",
+      "candidateSha256": "b5aed7737c020c13460b930f38880387ea5d9509e89263e98c6728843f4b387a",
+      "candidateModified": false
+    },
+    {
+      "path": "cli.mjs",
+      "bytes": 4579,
+      "mtime": "2026-11-04T13:12:07.428Z",
+      "contentRead": true,
+      "copied": true,
+      "candidateBytes": 4579,
+      "sourceSha256": "58c254ef0bb49c68749f1d7d059d13f7d8b5144b5a0d75819da6c5687d5edee6",
+      "candidateSha256": "58c254ef0bb49c68749f1d7d059d13f7d8b5144b5a0d75819da6c5687d5edee6",
+      "candidateModified": false
+    },
+    {
+      "path": "src/agent.mjs",
+      "bytes": 8838,
+      "mtime": "2026-11-04T13:09:26.092Z",
+      "contentRead": true,
+      "copied": true,
+      "candidateBytes": 8838,
+      "sourceSha256": "71b9e2bea6a2db7a168cd8805d078ae84dac65ba16f81470a74a7017ebdf3390",
+      "candidateSha256": "71b9e2bea6a2db7a168cd8805d078ae84dac65ba16f81470a74a7017ebdf3390",
+      "candidateModified": false
+    },
+    {
+      "path": "src/app.mjs",
+      "bytes": 6425,
+      "mtime": "2026-11-04T13:12:07.378Z",
+      "contentRead": true,
+      "copied": true,
+      "candidateBytes": 6425,
+      "sourceSha256": "8fc5c7a2ae38a5d0ad47cbb16b1d4d3bd2dfbea14047a3b4385d68200d3cb809",
+      "candidateSha256": "8fc5c7a2ae38a5d0ad47cbb16b1d4d3bd2dfbea14047a3b4385d68200d3cb809",
+      "candidateModified": false
+    },
+    {
+      "path": "src/crypto.mjs",
+      "bytes": 2152,
+      "mtime": "2026-11-04T13:08:25.354Z",
+      "contentRead": true,
+      "copied": true,
+      "candidateBytes": 2152,
+      "sourceSha256": "1bacd8bf1c68e2b3c0ed265737d3722623aace2f021986fc1e3591c1eb346dd3",
+      "candidateSha256": "1bacd8bf1c68e2b3c0ed265737d3722623aace2f021986fc1e3591c1eb346dd3",
+      "candidateModified": false
+    },
+    {
+      "path": "src/errors.mjs",
+      "bytes": 211,
+      "mtime": "2026-11-04T13:08:25.332Z",
+      "contentRead": true,
+      "copied": true,
+      "candidateBytes": 211,
+      "sourceSha256": "aa9fe91941955950ec9494fbfa673e37d75f16a7d44c1901f1d6ecd46da0bdd3",
+      "candidateSha256": "aa9fe91941955950ec9494fbfa673e37d75f16a7d44c1901f1d6ecd46da0bdd3",
+      "candidateModified": false
+    },
+    {
+      "path": "src/oauth.mjs",
+      "bytes": 6514,
+      "mtime": "2026-11-04T13:13:35.651Z",
+      "contentRead": true,
+      "copied": true,
+      "candidateBytes": 6514,
+      "sourceSha256": "7d9097cec2589d61fa7555883b25560cafdcd611cf6edaa710668fadb2c7accf",
+      "candidateSha256": "7d9097cec2589d61fa7555883b25560cafdcd611cf6edaa710668fadb2c7accf",
+      "candidateModified": false
+    },
+    {
+      "path": "src/runtime.mjs",
+      "bytes": 3734,
+      "mtime": "2026-11-04T13:10:44.115Z",
+      "contentRead": true,
+      "copied": true,
+      "candidateBytes": 3734,
+      "sourceSha256": "30beeacf273839f74ea22b9874fa0e454780d67426738d92565103815207bb57",
+      "candidateSha256": "30beeacf273839f74ea22b9874fa0e454780d67426738d92565103815207bb57",
+      "candidateModified": false
+    },
+    {
+      "path": "src/store.mjs",
+      "bytes": 6501,
+      "mtime": "2026-11-04T13:13:35.631Z",
+      "contentRead": true,
+      "copied": true,
+      "candidateBytes": 6501,
+      "sourceSha256": "3d5bff57ccd163d3e049c57256cc106bdc7f192e870c9636a4f8c26669d870c7",
+      "candidateSha256": "3d5bff57ccd163d3e049c57256cc106bdc7f192e870c9636a4f8c26669d870c7",
+      "candidateModified": false
+    },
+    {
+      "path": "test/api.test.mjs",
+      "bytes": 13930,
+      "mtime": "2026-11-04T13:13:06.418Z",
+      "contentRead": true,
+      "copied": true,
+      "candidateBytes": 13930,
+      "sourceSha256": "58a5f2ed9bb6a74f0593c8290b30dbb690f63b77e218f7b089d0e9367cb0fd7f",
+      "candidateSha256": "58a5f2ed9bb6a74f0593c8290b30dbb690f63b77e218f7b089d0e9367cb0fd7f",
+      "candidateModified": false
+    },
+    {
+      "path": "docs/openapi.json",
+      "bytes": 7772,
+      "mtime": "2026-11-04T13:12:07.453Z",
+      "contentRead": true,
+      "copied": true,
+      "candidateBytes": 7772,
+      "sourceSha256": "abe97ded6ebc9e65651e9eef5c73585e653b2c966600159255127199f0e538fb",
+      "candidateSha256": "abe97ded6ebc9e65651e9eef5c73585e653b2c966600159255127199f0e538fb",
+      "candidateModified": false
+    },
+    {
+      "path": "README.md",
+      "bytes": 8949,
+      "mtime": "2026-11-04T13:51:21.300Z",
+      "contentRead": true,
+      "copied": true,
+      "candidateBytes": 3518,
+      "sourceSha256": "d97449305e4bd4472e13498124e7ed76a55b7a7f976fff033efbb1df78127bea",
+      "candidateSha256": "ccac976531db7aa840d26a2660037cbe3e1891b7e2a78662540d6755ce361874",
+      "candidateModified": true
+    },
+    {
+      "path": "配置豆包工作.command",
+      "bytes": 183,
+      "mtime": "2026-11-04T13:12:07.526Z",
+      "contentRead": true,
+      "copied": true,
+      "candidateBytes": 75,
+      "sourceSha256": "f94c0297429be947e12e1f98fb9558be9ca844cc4cc8b925184e579b43a3a950",
+      "candidateSha256": "7f034bc00510da98e126573f6804901b50c0736c024b061d1508fc0772621ec7",
+      "candidateModified": true
+    },
+    {
+      "path": "启动API.command",
+      "bytes": 190,
+      "mtime": "2026-11-04T13:12:07.501Z",
+      "contentRead": true,
+      "copied": true,
+      "candidateBytes": 89,
+      "sourceSha256": "ef512e6f2a31056f930506aa8172beff58e9ac6e1499e934b4465ddd28025760",
+      "candidateSha256": "c7428080df75574facdac50d671e2b162df2e9a2f7b275f0e5f0c2b96176ea03",
+      "candidateModified": true
+    },
+    {
+      "path": "授权豆包工作.command",
+      "bytes": 244,
+      "mtime": "2026-11-04T13:12:07.550Z",
+      "contentRead": true,
+      "copied": true,
+      "candidateBytes": 90,
+      "sourceSha256": "9efb35cb71acb4b549691e3296575a99cc8e25fc0aa8fe56c2c659b7e525f46d",
+      "candidateSha256": "c136a8ca1f868bb72807050c1d67eaae23d78dcde53557be2b89cc894e67d7c6",
+      "candidateModified": true
+    }
+  ],
+  "updated": "2026-11-16",
+  "scan": {
+    "files": 17,
+    "findings": 0,
+    "rules": [
+      "privatePath",
+      "privateKey",
+      "tokenFormat",
+      "secretLiteral",
+      "privateResource",
+      "signedURL"
+    ],
+    "credentialFilesRead": false,
+    "gitleaks": "unavailable; full release scan remains required"
+  },
+  "tests": {
+    "command": "npm test",
+    "node": "v24.22.0",
+    "passed": 15,
+    "failed": 0,
+    "realOAuth": false,
+    "productionPortUsed": false
+  }
+}

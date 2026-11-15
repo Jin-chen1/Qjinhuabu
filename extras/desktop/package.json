@@ -1,0 +1,16 @@
+{
+  "name": "qjin-desktop",
+  "productName": "Q 金",
+  "version": "2.1.1",
+  "private": true,
+  "main": "main.cjs",
+  "license": "Elastic-2.0",
+  "scripts": {
+    "test": "node --test runtime.test.cjs",
+    "build": "node build.cjs"
+  },
+  "devDependencies": {
+    "@electron/packager": "19.0.1",
+    "electron": "45.2.3"
+  }
+}

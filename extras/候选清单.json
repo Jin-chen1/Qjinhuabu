@@ -1,0 +1,155 @@
+{
+  "date": "2026-11-16",
+  "desktopVersion": "2.1.1 (2026-11-10 snapshot)",
+  "files": [
+    {
+      "path": "extras/desktop/app-icon.png",
+      "source": "workspace/Q金.app/Contents/Resources/payload/source/desktop/app-icon.png",
+      "bytes": 3185764,
+      "sha256": "b4990958bb428d6f50a362612cd7676ae41860caa703b7e46ee3e80a4bc907bf",
+      "sourceSha256": "b4990958bb428d6f50a362612cd7676ae41860caa703b7e46ee3e80a4bc907bf",
+      "modifiedCandidate": false
+    },
+    {
+      "path": "extras/desktop/backend-entry.py",
+      "source": "workspace/Q金.app/Contents/Resources/payload/source/desktop/backend-entry.py",
+      "bytes": 504,
+      "sha256": "85a2ffb16c75be301b98982c44055c6a3e4b07742e26b52900db3ac9e7a96b70",
+      "sourceSha256": "85a2ffb16c75be301b98982c44055c6a3e4b07742e26b52900db3ac9e7a96b70",
+      "modifiedCandidate": false
+    },
+    {
+      "path": "extras/desktop/build.cjs",
+      "source": "workspace/Q金.app/Contents/Resources/payload/source/desktop/build.cjs",
+      "bytes": 5462,
+      "sha256": "5e6c129ab26e414a510af4f8de5ba50b076d79e0f956bf06d876b96d1fc6cc2d",
+      "sourceSha256": "5e6c129ab26e414a510af4f8de5ba50b076d79e0f956bf06d876b96d1fc6cc2d",
+      "modifiedCandidate": false
+    },
+    {
+      "path": "extras/desktop/finalize.py",
+      "source": "workspace/Q金.app/Contents/Resources/payload/source/desktop/finalize.py",
+      "bytes": 4204,
+      "sha256": "71e27fd55d0130b47e5cd8d46ad672485a2a6db14b414a3652d05ca053cbe09e",
+      "sourceSha256": "71e27fd55d0130b47e5cd8d46ad672485a2a6db14b414a3652d05ca053cbe09e",
+      "modifiedCandidate": false
+    },
+    {
+      "path": "extras/desktop/main.cjs",
+      "source": "workspace/Q金.app/Contents/Resources/payload/source/desktop/main.cjs",
+      "bytes": 6629,
+      "sha256": "7f3ea2b3b14e5e22d7ef68e18e22d2e8990ff5a74905b056c690a52e2821cbd1",
+      "sourceSha256": "d30d39639f96190d4d77bc688c657649eaa87e6a11a2dc8a4841d98d24dc211f",
+      "modifiedCandidate": true
+    },
+    {
+      "path": "extras/desktop/make-icon.py",
+      "source": "workspace/Q金.app/Contents/Resources/payload/source/desktop/make-icon.py",
+      "bytes": 448,
+      "sha256": "549322f1af3335f89279865fbd65f6299d1ae7c20570239b35d88c82e820aa45",
+      "sourceSha256": "549322f1af3335f89279865fbd65f6299d1ae7c20570239b35d88c82e820aa45",
+      "modifiedCandidate": false
+    },
+    {
+      "path": "extras/desktop/package-lock.json",
+      "source": "workspace/Q金.app/Contents/Resources/payload/source/desktop/package-lock.json",
+      "bytes": 64152,
+      "sha256": "07d855171a907a0c1ac84aff4c84705faac8ca91cdd1692a450c0621345d6034",
+      "sourceSha256": "07d855171a907a0c1ac84aff4c84705faac8ca91cdd1692a450c0621345d6034",
+      "modifiedCandidate": false
+    },
+    {
+      "path": "extras/desktop/package.json",
+      "source": "workspace/Q金.app/Contents/Resources/payload/source/desktop/package.json",
+      "bytes": 329,
+      "sha256": "67f7492be015fe11c43aa4a80d39c560edef33cd01ffd0a4c54790bbb9fbe60b",
+      "sourceSha256": "67f7492be015fe11c43aa4a80d39c560edef33cd01ffd0a4c54790bbb9fbe60b",
+      "modifiedCandidate": false
+    },
+    {
+      "path": "extras/desktop/PACKAGING.md",
+      "source": "workspace/Q金.app/Contents/Resources/payload/source/desktop/PACKAGING.md",
+      "bytes": 1513,
+      "sha256": "fb48e2e49ba640c4b95e6fcbe2b2cd6b8d77e2b22017b465ba7ab8f663864cdf",
+      "sourceSha256": "fb48e2e49ba640c4b95e6fcbe2b2cd6b8d77e2b22017b465ba7ab8f663864cdf",
+      "modifiedCandidate": false
+    },
+    {
+      "path": "extras/desktop/python-dependencies.json",
+      "source": "workspace/Q金.app/Contents/Resources/payload/source/desktop/python-dependencies.json",
+      "bytes": 7783,
+      "sha256": "d0485c7854cb254046292ee75fb89972e9e0197ffb81ba587ceddf877bef3a48",
+      "sourceSha256": "d0485c7854cb254046292ee75fb89972e9e0197ffb81ba587ceddf877bef3a48",
+      "modifiedCandidate": false
+    },
+    {
+      "path": "extras/desktop/QJin.icns",
+      "source": "workspace/Q金.app/Contents/Resources/payload/source/desktop/QJin.icns",
+      "bytes": 4168087,
+      "sha256": "b312fb64bac679ec8518bb18fc0d3fbfedeb142526817da27d05e3ddc6c5a7f6",
+      "sourceSha256": "b312fb64bac679ec8518bb18fc0d3fbfedeb142526817da27d05e3ddc6c5a7f6",
+      "modifiedCandidate": false
+    },
+    {
+      "path": "extras/desktop/runtime.cjs",
+      "source": "workspace/Q金.app/Contents/Resources/payload/source/desktop/runtime.cjs",
+      "bytes": 2727,
+      "sha256": "af3426749667cb33dce663fbeb2442a66a2e417ab69dc7c5b40f89fef3591f17",
+      "sourceSha256": "af3426749667cb33dce663fbeb2442a66a2e417ab69dc7c5b40f89fef3591f17",
+      "modifiedCandidate": false
+    },
+    {
+      "path": "extras/desktop/runtime.test.cjs",
+      "source": "workspace/Q金.app/Contents/Resources/payload/source/desktop/runtime.test.cjs",
+      "bytes": 2970,
+      "sha256": "26eaaa510b513076b392aa96d8ea047f221daff723fcd900d597d6d016cb4e83",
+      "sourceSha256": "26eaaa510b513076b392aa96d8ea047f221daff723fcd900d597d6d016cb4e83",
+      "modifiedCandidate": false
+    },
+    {
+      "path": "extras/desktop/wordmark.png",
+      "source": "workspace/Q金.app/Contents/Resources/payload/source/desktop/wordmark.png",
+      "bytes": 45450,
+      "sha256": "e4ca00fc72538b031f20ad38c622cd0f8751932f7084b1698f7f9dcb7830b216",
+      "sourceSha256": "e4ca00fc72538b031f20ad38c622cd0f8751932f7084b1698f7f9dcb7830b216",
+      "modifiedCandidate": false
+    },
+    {
+      "path": "extras/canvas-skills/viral-video-oneclick/SKILL.md",
+      "source": "materials/viral-video-oneclick-canvas（适配 Q金 画布）/SKILL.md",
+      "bytes": 8633,
+      "sha256": "31e6f40ac0c3eae5ff0d8f9d1071c490a0881cba54c388b3271b5bee3a05ba2c",
+      "sourceSha256": "31e6f40ac0c3eae5ff0d8f9d1071c490a0881cba54c388b3271b5bee3a05ba2c",
+      "modifiedCandidate": false
+    },
+    {
+      "path": "extras/canvas-skills/viral-video-oneclick/viral-video-oneclick.skill-bundle.json",
+      "source": "materials/viral-video-oneclick-canvas（适配 Q金 画布）/viral-video-oneclick.skill-bundle.json",
+      "bytes": 34394,
+      "sha256": "32967a4c464a3c374d38ab74de84bc201b3121d8428c01edf2b7e6719c2bf320",
+      "sourceSha256": "32967a4c464a3c374d38ab74de84bc201b3121d8428c01edf2b7e6719c2bf320",
+      "modifiedCandidate": false
+    },
+    {
+      "path": "extras/canvas-skills/viral-video-oneclick/使用与修正说明.md",
+      "source": "materials/viral-video-oneclick-canvas（适配 Q金 画布）/使用与修正说明.md",
+      "bytes": 2227,
+      "sha256": "f76e1d0bb38540f4bef0c4762d7603e8cf02affb714c507ce6da483b12bf7124",
+      "sourceSha256": "f76e1d0bb38540f4bef0c4762d7603e8cf02affb714c507ce6da483b12bf7124",
+      "modifiedCandidate": false
+    }
+  ],
+  "scan": {
+    "scope": "copied candidate text only",
+    "rules": [
+      "private-key",
+      "token-format",
+      "secret-literal",
+      "private-absolute-path",
+      "private-resource-id"
+    ],
+    "findings": [],
+    "gateway": "未扫描源码；等待确认后重新扫描",
+    "binary": "仅白名单图标，未作OCR或元数据隐私鉴定"
+  }
+}

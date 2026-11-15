@@ -1,0 +1,16 @@
+{
+  "name": "doubao-work-local-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24.0.0" },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test test/*.test.mjs",
+    "prepare-local": "node cli.mjs prepare",
+    "configure": "node cli.mjs configure",
+    "authorize": "node cli.mjs authorize",
+    "key": "node cli.mjs key",
+    "status": "node cli.mjs status"
+  }
+}

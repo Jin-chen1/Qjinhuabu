@@ -1,0 +1,170 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "豆包工作本地 OAuth API",
+    "version": "0.1.0",
+    "description": "单用户本地服务。Bearer Key 由本服务签发；用户 OAuth token 保存在服务端。使用豆包工作会话协议，不是 OpenAI 模型网关。"
+  },
+  "servers": [{"url": "http://127.0.0.1:8791"}],
+  "security": [{"localKey": []}],
+  "components": {
+    "securitySchemes": {
+      "localKey": {"type": "http", "scheme": "bearer", "description": "本机 CLI key 命令读取的本地 Key"}
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "outcomeUnknown"],
+            "properties": {
+              "code": {"type": "string"},
+              "outcomeUnknown": {"type": "boolean"},
+              "guidance": {"type": "string"}
+            }
+          }
+        }
+      },
+      "Data": {"type": "object", "properties": {"data": {"type": "object", "additionalProperties": true}}},
+      "AuthStatus": {
+        "type": "object",
+        "properties": {
+          "configured": {"type": "boolean"},
+          "connected": {"type": "boolean"},
+          "reauthorizationRequired": {"type": "boolean"},
+          "accessExpiresAt": {"type": "string", "nullable": true},
+          "refreshExpiresAt": {"type": "string", "nullable": true},
+          "tokenType": {"type": "string", "nullable": true}
+        }
+      }
+    },
+    "responses": {
+      "Data": {"description": "上游成功响应的数据，原结构保留", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Data"}}}},
+      "Error": {"description": "本地或上游失败；结果未知时不自动重发", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}}
+    }
+  },
+  "paths": {
+    "/healthz": {
+      "get": {
+        "security": [], "summary": "本机健康及配置状态",
+        "responses": {"200": {"description": "服务运行，connected 仅表示本地存在有效授权，并非业务权限验收"}}
+      }
+    },
+    "/v1/auth/status": {
+      "get": {
+        "summary": "查询授权状态，不返回 token",
+        "responses": {
+          "200": {"description": "授权状态", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/AuthStatus"}}}},
+          "401": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/v1/oauth/start": {
+      "post": {
+        "summary": "取得十分钟有效的一次性浏览器授权路径",
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object", "maxProperties": 0}}}},
+        "responses": {
+          "200": {"description": "浏览器访问 path；本人完成授权。不要记录该一次性 URL。",
+            "content": {"application/json": {"schema": {"type": "object", "properties": {
+              "path": {"type": "string"}, "expiresIn": {"type": "integer"}
+            }}}}},
+          "401": {"$ref": "#/components/responses/Error"},
+          "503": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/v1/auth": {
+      "delete": {
+        "summary": "删除本地授权；不代替开放平台撤销授权",
+        "responses": {"200": {"description": "本地已断开，platformTokenRevoked=false"}, "401": {"$ref": "#/components/responses/Error"}}
+      }
+    },
+    "/v1/config/reload": {
+      "post": {
+        "summary": "从本机配置和钥匙串重新加载 App 配置",
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"type": "object"}}}},
+        "responses": {"200": {"description": "配置已加载"}, "401": {"$ref": "#/components/responses/Error"}}
+      }
+    },
+    "/v1/sessions": {
+      "post": {
+        "summary": "创建会话；uuid 为本次逻辑请求唯一标识，重试必须保持内容相同",
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {
+          "type": "object", "required": ["uuid", "name"], "properties": {
+            "uuid": {"type": "string", "pattern": "^[a-zA-Z0-9_-]{1,256}$"},
+            "name": {"type": "string", "minLength": 1, "maxLength": 256}
+          }
+        }}}},
+        "responses": {
+          "200": {"$ref": "#/components/responses/Data"},
+          "400": {"$ref": "#/components/responses/Error"},
+          "401": {"$ref": "#/components/responses/Error"},
+          "409": {"$ref": "#/components/responses/Error"},
+          "502": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/v1/files": {
+      "post": {
+        "summary": "上传 PNG/JPEG/WebP 图片，最大 20 MiB；返回 file URI",
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {
+          "type": "object", "required": ["uuid", "filename", "contentBase64"], "properties": {
+            "uuid": {"type": "string", "pattern": "^[a-zA-Z0-9_-]{1,256}$"},
+            "filename": {"type": "string", "maxLength": 256},
+            "contentBase64": {"type": "string", "format": "byte", "description": "标准 Base64，不包含 data: 前缀"}
+          }
+        }}}},
+        "responses": {
+          "200": {"$ref": "#/components/responses/Data"},
+          "400": {"$ref": "#/components/responses/Error"},
+          "409": {"$ref": "#/components/responses/Error"},
+          "413": {"$ref": "#/components/responses/Error"},
+          "502": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/v1/sessions/{sessionId}/events": {
+      "parameters": [{"in": "path", "name": "sessionId", "required": true, "schema": {"type": "string"}}],
+      "post": {
+        "summary": "发送文本及已上传图片；返回用户消息 ID。模型可能异步执行，随后读取 messages。",
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {
+          "type": "object", "required": ["uuid", "text"], "properties": {
+            "uuid": {"type": "string", "pattern": "^[a-zA-Z0-9_-]{1,256}$"},
+            "text": {"type": "string", "minLength": 1, "maxLength": 65535},
+            "files": {"type": "array", "maxItems": 9, "items": {
+              "type": "object", "required": ["uri", "name"], "properties": {
+                "uri": {"type": "string", "description": "本服务上传的 file URI"},
+                "name": {"type": "string", "maxLength": 256}
+              }
+            }}
+          }
+        }}}},
+        "responses": {
+          "200": {"$ref": "#/components/responses/Data"},
+          "403": {"$ref": "#/components/responses/Error"},
+          "404": {"$ref": "#/components/responses/Error"},
+          "409": {"$ref": "#/components/responses/Error"},
+          "502": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    },
+    "/v1/sessions/{sessionId}/messages": {
+      "parameters": [{"in": "path", "name": "sessionId", "required": true, "schema": {"type": "string"}}],
+      "get": {
+        "summary": "读取消息和真实产物。只允许本服务当前授权创建的会话。",
+        "parameters": [
+          {"in": "query", "name": "page_size", "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 100}},
+          {"in": "query", "name": "order", "schema": {"type": "string", "enum": ["asc", "desc"], "default": "desc"}},
+          {"in": "query", "name": "page_token", "schema": {"type": "string", "maxLength": 2048}}
+        ],
+        "responses": {
+          "200": {"$ref": "#/components/responses/Data"},
+          "404": {"$ref": "#/components/responses/Error"},
+          "409": {"$ref": "#/components/responses/Error"},
+          "502": {"$ref": "#/components/responses/Error"}
+        }
+      }
+    }
+  }
+}
