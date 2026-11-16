@@ -79,6 +79,62 @@ function dispatch(nodeId = 'script', action = 'generate_story_script', requestId
   act(() => { dispatchNodeAction({ nodeId, action, requestId: requestId ?? undefined, executionMode: 'single' }); });
 }
 
+function connectUpstreamScript(data: ScriptNodeData) {
+  useCanvasStore.setState((state) => ({
+    nodes: [...state.nodes, {
+      id: 'new-template-script', type: CANVAS_NODE_TYPES.script,
+      position: { x: -500, y: 0 }, data,
+    }],
+    edges: [{ id: 'template-shot', source: 'new-template-script', target: 'script' }],
+  }));
+}
+
+it('passes complete upstream script rows as sourceText and keeps the shot instruction separate', async () => {
+  const rows = [
+    {
+      shot_no: 1, duration: '5s', visual_description: 'Original orbit around lipstick',
+      character_1: 'Model', character_description_1: 'Red coat', character_image_1: '/model.png',
+      character_2: 'Partner', character_description_2: 'Black coat', character_image_2: '/partner.png',
+      reference: '/frame.png', shot: 'Close up', character_action: 'Turn',
+      emotion: 'Calm', scene_tags: 'Studio', lighting_mood: 'Warm',
+      sound: 'Music', dialogue: 'Exact original line', shot_prompt: 'Lipstick details',
+      video_motion_prompt: 'Clockwise orbit, no translation',
+    },
+    { shot_no: 2, visual_description: 'Final freeze', dialogue: 'Final original line' },
+  ];
+  connectUpstreamScript({ scriptResult: { title: 'Original template', rows } });
+  const events = setup();
+  try {
+    dispatch();
+    await waitFor(() => expect(submitFreezoneStoryScript).toHaveBeenCalledTimes(1));
+    const input = vi.mocked(submitFreezoneStoryScript).mock.calls[0][1];
+    const sourceText = input.sourceText ?? '';
+    for (const row of rows) {
+      for (const value of Object.values(row)) expect(sourceText).toContain(String(value));
+    }
+    expect(sourceText.indexOf('Original orbit')).toBeLessThan(sourceText.indexOf('Final freeze'));
+    expect(sourceText).not.toContain('Create a new shot');
+    expect(input.prompt).toBe('Create a new shot');
+  } finally { events.cleanup(); }
+});
+
+it.each([
+  ['missing', {}],
+  ['empty', { scriptResult: { rows: [] } }],
+  ['script stale', { scriptResult: oldScript, scriptResultStale: true }],
+  ['workflow stale', { scriptResult: oldScript, workflowResultStale: true }],
+  ['generating', { scriptResult: oldScript, isGenerating: true }],
+  ['failed', { scriptResult: oldScript, generationError: 'Failed' }],
+])('rejects %s upstream script without falling back to its prompt or downstream prompt', async (_name, data) => {
+  connectUpstreamScript({ ...data, prompt: 'Do not use upstream prompt' });
+  const events = setup();
+  try {
+    dispatch();
+    await waitFor(() => expect(events.result).toHaveBeenCalledWith(expect.objectContaining({ status: 'error' })));
+    expect(submitFreezoneStoryScript).not.toHaveBeenCalled();
+  } finally { events.cleanup(); }
+});
+
 it('accepts once and reports the actual fresh script only after task completion', async () => {
   let complete!: () => void;
   vi.mocked(awaitTaskCompletion).mockImplementation(() => new Promise((resolve) => {

@@ -1,4 +1,5 @@
 import i18next from "i18next";
+import { isVideoGenerationBlocked } from "@/features/canvas/application/videoCompositionProvenance";
 import {
   CANVAS_NODE_TYPES,
   NODE_TOOL_TYPES,
@@ -1321,13 +1322,18 @@ function addFrontendNodeActions(
         parameters: { node_id: node.id },
       });
     }
-    actions.push({
-      action: "generate_video",
-      execution: "frontend_node",
-      command_type: "run_node_action",
-      description: GENERATE_VIDEO_ACTION_DESCRIPTION,
-      parameters: { node_id: node.id },
-    });
+    if (!isVideoGenerationBlocked(node.id, {
+      nodes: context?.nodes ?? [node],
+      edges: context?.edges ?? [],
+    }, node.data)) {
+      actions.push({
+        action: "generate_video",
+        execution: "frontend_node",
+        command_type: "run_node_action",
+        description: GENERATE_VIDEO_ACTION_DESCRIPTION,
+        parameters: { node_id: node.id },
+      });
+    }
   }
 
   if (node.type === CANVAS_NODE_TYPES.audio) {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { readStrictScriptVideoPrompt } from './strictScriptVideo';
+import { readStrictScriptVideoDuration, readStrictScriptVideoPrompt } from './strictScriptVideo';
 
 const source = (data: Record<string, unknown> = {}) => ({
   id: 'script',
@@ -18,6 +18,18 @@ const source = (data: Record<string, unknown> = {}) => ({
 });
 
 describe('strict script video prompt', () => {
+  it('uses the complete script duration rather than a stale video form value', () => {
+    expect(readStrictScriptVideoDuration({ strictScriptSourceNodeId: 'script', durationSec: 10 }, [
+      source({ scriptResult: { rows: [{ duration: 2 }, { duration: 3 }] } }),
+    ])).toBe(5);
+    expect(readStrictScriptVideoDuration({}, [])).toBeNull();
+  });
+
+  it.each([undefined, 0, -1, '5', NaN])('rejects unusable strict duration %s', (duration) => {
+    expect(() => readStrictScriptVideoDuration({ strictScriptSourceNodeId: 'script' }, [
+      source({ scriptResult: { rows: [{ duration, shot_prompt: 'Shot' }] } }),
+    ])).toThrow();
+  });
   it('wires the rendered node form to the strict-aware handler, bypassing recipe and camera inputs', () => {
     const nodeSource = readFileSync('src/features/canvas/nodes/VideoNode.tsx', 'utf8');
     expect(nodeSource).toContain('onSubmit={handleSubmit}');
@@ -50,6 +62,7 @@ describe('strict script video prompt', () => {
     { isGenerating: true },
     { generationError: 'failed' },
     { scriptResultStale: true },
+    { workflowResultStale: true, scriptResultStale: false },
     { syncStatus: 'stale' },
     { syncStatus: 'syncing' },
     { syncStatus: 'error' },

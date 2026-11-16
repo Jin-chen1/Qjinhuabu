@@ -5,6 +5,7 @@ import {
 } from "@/features/canvas/domain/replicationPreparation";
 import { executeWorkflowHtmlNode } from "@/features/canvas/application/workflowHtmlRuntime";
 import { extractUpstreamContent } from "@/features/canvas/application/graphContentResolver";
+import { isCompositionResultVideo, isVideoGenerationBlocked } from "@/features/canvas/application/videoCompositionProvenance";
 import { type HtmlArtifactCommand, parseHtmlArtifactCommand, executeHtmlArtifactCommand } from '@/features/html-artifacts/commands';
 import { executeHtmlNodeWriteAction } from '@/features/html-artifacts/nodeActions';
 import {
@@ -559,7 +560,7 @@ const TERMINAL_WORKFLOW_ACTION_STATUSES = new Set<WorkflowRunActionStatus>([
 const WORKFLOW_CAPACITY_POLL_INTERVAL_MS = 2_000;
 const WORKFLOW_ACTION_LANE_LIMITS = {
   default: 3,
-  video: 3,
+  video: 10,
   world: 1,
   ffmpeg: 1,
 } as const;
@@ -600,9 +601,12 @@ function workflowActionLane(action: string): WorkflowActionLane {
 }
 
 function drainWorkflowActionSlots(): void {
-  while (activeWorkflowActions < WORKFLOW_ACTION_CONCURRENCY) {
+  while (workflowActionSlotWaiters.length > 0) {
     const waiterIndex = workflowActionSlotWaiters.findIndex(
       ({ lane, laneLimit }) =>
+        // Video slots are independent; retain the shared non-video budget.
+        (lane === "video" ||
+          activeWorkflowActions - activeWorkflowActionsByLane.video < WORKFLOW_ACTION_CONCURRENCY) &&
         activeWorkflowActionsByLane[lane] <
         Math.min(WORKFLOW_ACTION_LANE_LIMITS[lane], laneLimit),
     );
@@ -1720,6 +1724,10 @@ function assertNodeActionAvailable(nodeId: string, action: string): void {
   }
   const targetNode = nodeById(nodeId);
   if (!targetNode) throw new Error(`node not found: ${nodeId}`);
+  if (action === "generate_video" && targetNode.type === CANVAS_NODE_TYPES.video
+    && isVideoGenerationBlocked(targetNode.id, useCanvasStore.getState(), targetNode.data)) {
+    throw new Error("合成输出视频不可重新生成，请运行来源合成节点");
+  }
   const state = useCanvasStore.getState();
   const catalog = buildCanvasNodeActionCatalog(targetNode, {
     nodes: state.nodes,
@@ -1809,6 +1817,7 @@ function expandWorkflowNodeIds(
 }
 
 function defaultWorkflowActionForNode(node: CanvasNode): string | null {
+  if (isComposeOutputVideo(node)) return null;
   if (node.type === CANVAS_NODE_TYPES.video && node.data.replicationPreparationTargets) {
     return PREPARE_REPLICATION_REFERENCE;
   }
@@ -1879,6 +1888,11 @@ function workflowExternalImageSourceIds(
     externalSources.add(edge.source);
   }
   return new Set([...externalSources].filter((sourceId) => !ordinarySources.has(sourceId)));
+}
+
+function isComposeOutputVideo(node: CanvasNode): boolean {
+  return node.type === CANVAS_NODE_TYPES.video
+    && isCompositionResultVideo(node.id, useCanvasStore.getState(), node.data);
 }
 
 function isRedundantLegacyComposeGenerator(

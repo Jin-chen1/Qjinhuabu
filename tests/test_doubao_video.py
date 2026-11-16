@@ -91,6 +91,9 @@ async def test_generation_delivers_actual_duration_and_same_run_reuses(tmp_path,
     assert len(store.client.posts) == 3
     upload = store.client.posts[1][1]
     assert base64.b64decode(upload["contentBase64"]) == frame.read_bytes()
+    submitted_text = store.client.posts[2][1]["text"]
+    assert "默认约5秒" not in submitted_text
+    assert submitted_text.count("目标时长约5秒") == 1
     repeated = await generator.generate(**options)
     assert repeated.provider_task_id == result.provider_task_id
     assert len(store.client.posts) == 3

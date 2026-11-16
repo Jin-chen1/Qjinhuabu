@@ -82,6 +82,10 @@ export NOVELVIDEO_RUNTIME_DIR="${NOVELVIDEO_RUNTIME_DIR:-$NOVELVIDEO_DATA_ROOT/r
 # Reuse the user's one durable material library across local reinstalls.
 if [ "$(uname -s)" = "Darwin" ]; then
   export QJIN_MEDIA_LIBRARY_ENABLED="${QJIN_MEDIA_LIBRARY_ENABLED:-1}"
+  # Apply after .env so stale local video limits cannot restore the old pool.
+  export ST_PROJECT_MAX_ACTIVE_VIDEO_TASKS=10
+  export ST_PROJECT_USER_MAX_ACTIVE_VIDEO_TASKS=10
+  export ST_CE_GLOBAL_MAX_ACTIVE_VIDEO_TASKS=10
 fi
 
 # This launcher provisions Codex only. Do not silently ignore an older .env

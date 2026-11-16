@@ -319,7 +319,14 @@ async function buildSuccessPatch(
     }
     case 'script': {
       const result = await fetchFreezoneStoryScriptResult(projectId, jobId);
-      return { ...CLEARED_GENERATION_TASK_FIELDS, scriptResult: result, scriptTitle: result.title ?? null };
+      return {
+        ...CLEARED_GENERATION_TASK_FIELDS,
+        scriptResult: result,
+        scriptTitle: result.title ?? null,
+        scriptResultStale: false,
+        workflowResultStale: false,
+        generationError: null,
+      };
     }
     case 'reverse-prompt': {
       const { prompt } = await fetchFreezoneReversePromptResult(projectId, jobId);

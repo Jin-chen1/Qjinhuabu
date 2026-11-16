@@ -30,6 +30,10 @@ import {
   joinUpstreamText,
 } from "@/features/canvas/application/graphContentResolver";
 import { compileWorkflowNodePrompt } from "@/features/canvas/application/workflowRecipeRuntime";
+import {
+  readStrictScriptVideoDuration,
+  readStrictScriptVideoPrompt,
+} from "@/features/canvas/application/strictScriptVideo";
 import { useUpstreamNodes } from "@/features/canvas/application/useUpstreamGraph";
 import {
   sortUpstreamByReferenceOrder,
@@ -91,6 +95,7 @@ import {
 import { useFreezoneVideoCameraTemplates } from "@/features/canvas/hooks/useFreezoneVideoCameraTemplates";
 import { useFreezoneVideoModels } from "@/features/canvas/hooks/useFreezoneVideoModels";
 import { useCanvasStore } from "@/stores/canvasStore";
+import { isVideoGenerationBlocked } from "@/features/canvas/application/videoCompositionProvenance";
 import {
   fetchFreezoneJobResult,
   submitFreezoneVideoEdit,
@@ -1203,10 +1208,11 @@ export function useVideoGenerationForm(
     selectedModelReferenceError !== null ||
     mediaRejectionReason != null ||
     (videoModeRequiresPrompt(genMode)
-      ? !hasPromptText
+      ? data.strictScriptSourceNodeId == null && !hasPromptText
       : !hasRequiredMediaForMode);
 
   const handleSubmit = useCallback(async (): Promise<{ videoUrl?: string }> => {
+    if (isVideoGenerationBlocked(id, useCanvasStore.getState(), data)) return {};
     if (billingRuleMissingSubmitMessage) {
       updateNodeData(id, {
         isGenerating: false,
@@ -1217,7 +1223,7 @@ export function useVideoGenerationForm(
       });
       return {};
     }
-    if (submitDisabled) return {};
+    if (data.composeSourceNodeId || data.referenceOnly || submitDisabled) return {};
     // 在途守卫（与 ImageGenNode 一致）：第 1 条完成就会清 isGenerating，
     // submitDisabled 拦不住「旧批次 N-1 个任务还在跑时重新提交」——旧闭包
     // 会用过期的 completedUrls 覆写新批次的 generationBatch。
@@ -1253,7 +1259,12 @@ export function useVideoGenerationForm(
       : userPrompt;
     try {
       // 工作流配方节点用配方编译出的最终 prompt；非配方节点回落上面这段拼接。
-      const composedPrompt = await compileWorkflowNodePrompt({
+      const freshState = useCanvasStore.getState();
+      const freshNodeData = freshState.nodes.find((node) => node.id === id)?.data ?? data;
+      const strictUpstream = upstreamNodesInEdgeOrder(freshState.nodes, freshState.edges, id);
+      const strictPrompt = readStrictScriptVideoPrompt(freshNodeData, strictUpstream);
+      const strictDuration = readStrictScriptVideoDuration(freshNodeData, strictUpstream);
+      const composedPrompt = strictPrompt ?? await compileWorkflowNodePrompt({
         nodeId: id,
         nodeData: data,
         nodeKind: "video",
@@ -1327,8 +1338,12 @@ export function useVideoGenerationForm(
         return resolveVideoKeyframeUrls(candidates);
       };
 
-      const durationClamped = clampVideoDuration(durationSec, durationBounds);
-      const cameraTemplateId = cameraMovementId;
+      const durationClamped = clampVideoDuration(strictDuration ?? durationSec, durationBounds);
+      if (strictDuration !== null && durationClamped !== strictDuration) {
+        throw new Error("脚本总时长超出当前模型支持范围，请调整脚本或模型。");
+      }
+      const cameraTemplateId = strictPrompt !== null ? null : cameraMovementId;
+      const submitSceneOptimize = strictPrompt !== null ? null : sceneOptimize ?? null;
       // 后端按 canvas_id + node_id 记录每个节点的生成历史。多条生成时每个
       // 兄弟节点用各自的 targetId 作 node_id，历史才能分别落到对应节点。
       const canvasId = readUrl().canvas ?? "default";
@@ -1364,7 +1379,7 @@ export function useVideoGenerationForm(
             model: selectedVideoModel?.catalogId ?? modelId,
             modelParams: data.modelParams,
             humanReview: supportsHumanReview && humanReview,
-            sceneOptimize: sceneOptimize ?? null,
+            sceneOptimize: submitSceneOptimize,
             canvasId,
             nodeId: targetId,
           });
@@ -1395,7 +1410,7 @@ export function useVideoGenerationForm(
             genMode,
             modelParams: data.modelParams,
             humanReview: supportsHumanReview && humanReview,
-            sceneOptimize: sceneOptimize ?? null,
+            sceneOptimize: submitSceneOptimize,
             canvasId,
             nodeId: targetId,
           });
@@ -1683,7 +1698,7 @@ export function useVideoGenerationForm(
             genMode,
             modelParams: data.modelParams,
             humanReview: supportsHumanReview && humanReview,
-            sceneOptimize: sceneOptimize ?? null,
+            sceneOptimize: submitSceneOptimize,
             canvasId,
             nodeId: targetId,
           });
@@ -1701,7 +1716,7 @@ export function useVideoGenerationForm(
             genMode,
             modelParams: data.modelParams,
             humanReview: supportsHumanReview && humanReview,
-            sceneOptimize: sceneOptimize ?? null,
+            sceneOptimize: submitSceneOptimize,
             canvasId,
             nodeId: targetId,
           });

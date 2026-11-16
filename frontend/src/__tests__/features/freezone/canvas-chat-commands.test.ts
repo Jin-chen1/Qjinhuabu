@@ -60,6 +60,118 @@ import { useCanvasStore } from "@/stores/canvasStore";
 const uploadFreezoneImage = vi.hoisted(() => vi.fn());
 const captureVideoFrameBlob = vi.hoisted(() => vi.fn());
 
+describe("compose output video generation guard", () => {
+  beforeEach(() => useCanvasStore.getState().setCanvasData([], []));
+
+  it.each(["connected", "node"] as const)(
+    "does not generate an unmarked compose output on repeated %s workflow runs",
+    async (scope) => {
+      const store = useCanvasStore.getState();
+      const composeId = store.addNode(CANVAS_NODE_TYPES.videoCompose, { x: 0, y: 0 }, {});
+      const outputId = store.addNode(CANVAS_NODE_TYPES.video, { x: 400, y: 0 }, {
+        prompt: "合并上游节点的视频和音频",
+        workflowResultStale: true,
+      });
+      store.addEdge(composeId, outputId);
+      const events: Array<{ nodeId: string; action: string }> = [];
+      const unsubscribe = canvasEventBus.subscribe("freezone/run-node-action", (event) => {
+        events.push(event);
+        if (!event.requestId) return;
+        store.updateNodeData(composeId, { resultVideoUrl: "/static/test/final.mp4" });
+        canvasEventBus.publish("freezone/node-action-result", {
+          requestId: event.requestId, nodeId: event.nodeId, action: event.action,
+          status: "success", output: { videoUrl: "/static/test/final.mp4" },
+        });
+      });
+      try {
+        for (let run = 0; run < 2; run++) {
+          await applyCanvasChatCommandsAsync(extractCanvasChatCommandEnvelopes([{
+            schema_version: CANVAS_CHAT_COMMANDS_SCHEMA_VERSION,
+            commands: [{ type: "run_workflow", node_ids: [outputId], direction: scope, regenerate: true }],
+          }]), { canvasId: "canvas-a", actionTimeoutMs: 100 });
+        }
+        expect(events.filter((event) => event.action === "generate_video")).toEqual([]);
+      } finally {
+        unsubscribe();
+      }
+    },
+  );
+
+  it("rejects direct chat generation of an unmarked compose output without publishing", async () => {
+    const store = useCanvasStore.getState();
+    const composeId = store.addNode(CANVAS_NODE_TYPES.videoCompose, { x: 0, y: 0 }, {});
+    const outputId = store.addNode(CANVAS_NODE_TYPES.video, { x: 400, y: 0 }, { prompt: "合并上游节点的视频和音频" });
+    store.addEdge(composeId, outputId);
+    const events: unknown[] = [];
+    const unsubscribe = canvasEventBus.subscribe("freezone/run-node-action", (event) => events.push(event));
+    try {
+      const result = await applyCanvasChatCommandsAsync(extractCanvasChatCommandEnvelopes([{
+        schema_version: CANVAS_CHAT_COMMANDS_SCHEMA_VERSION,
+        commands: [{ type: "run_node_action", node_id: outputId, action: "generate_video" }],
+      }]), { canvasId: "canvas-a", actionTimeoutMs: 100 });
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(events).toEqual([]);
+    } finally {
+      unsubscribe();
+    }
+  });
+
+  it("hides compose-output generation from the catalog but preserves viewing, downloading and source generation", () => {
+    const store = useCanvasStore.getState();
+    const sourceId = store.addNode(CANVAS_NODE_TYPES.video, { x: 0, y: 0 }, {
+      prompt: "商品视频", videoUrl: "/static/test/source.mp4",
+    });
+    const composeId = store.addNode(CANVAS_NODE_TYPES.videoCompose, { x: 400, y: 0 }, {});
+    const outputId = store.addNode(CANVAS_NODE_TYPES.video, { x: 800, y: 0 }, {
+      prompt: "合并上游节点的视频和音频", videoUrl: "/static/test/final.mp4",
+    });
+    store.addEdge(sourceId, composeId);
+    store.addEdge(composeId, outputId);
+    const graph = useCanvasStore.getState();
+    const actionsFor = (id: string) => buildCanvasNodeActionCatalog(
+      graph.nodes.find((node) => node.id === id)!, graph,
+    ).actions.map((action) => action.action);
+    expect(actionsFor(outputId)).not.toContain("generate_video");
+    expect(actionsFor(outputId)).toContain("open_video_viewer");
+    expect(actionsFor(outputId)).toContain("download_video");
+    expect(actionsFor(sourceId)).toContain("generate_video");
+  });
+
+  it.each([{ referenceOnly: true }, { composeSourceNodeId: "deleted-compose" }])(
+    "keeps marked reference media read-only without a surviving compose edge: %j",
+    (marker) => {
+      const store = useCanvasStore.getState();
+      const id = store.addNode(CANVAS_NODE_TYPES.video, { x: 0, y: 0 }, {
+        ...marker, videoUrl: "/static/test/final.mp4", prompt: "参考视频",
+      });
+      const node = useCanvasStore.getState().nodes.find((candidate) => candidate.id === id)!;
+      const actions = buildCanvasNodeActionCatalog(node).actions.map((action) => action.action);
+      expect(actions).not.toContain("generate_video");
+      expect(actions).toContain("open_video_viewer");
+      expect(actions).toContain("download_video");
+    },
+  );
+
+  it("still publishes explicit generation for a normal source feeding a compose node", () => {
+    const store = useCanvasStore.getState();
+    const sourceId = store.addNode(CANVAS_NODE_TYPES.video, { x: 0, y: 0 }, { prompt: "商品视频" });
+    const composeId = store.addNode(CANVAS_NODE_TYPES.videoCompose, { x: 400, y: 0 }, {});
+    store.addEdge(sourceId, composeId);
+    const events: Array<{ nodeId: string; action: string }> = [];
+    const unsubscribe = canvasEventBus.subscribe("freezone/run-node-action", (event) => events.push(event));
+    try {
+      const result = applyCanvasChatCommands(extractCanvasChatCommandEnvelopes([{
+        schema_version: CANVAS_CHAT_COMMANDS_SCHEMA_VERSION,
+        commands: [{ type: "run_node_action", node_id: sourceId, action: "generate_video" }],
+      }]));
+      expect(result.errors).toEqual([]);
+      expect(events).toEqual([{ nodeId: sourceId, action: "generate_video", executionMode: "single" }]);
+    } finally {
+      unsubscribe();
+    }
+  });
+});
+
 vi.mock("@/api/ops", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/ops")>();
   return {
@@ -6959,6 +7071,79 @@ describe("canvas chat commands", () => {
     }
   });
 
+  it("runs ten videos without borrowing the three non-video slots", async () => {
+    const limits = await getProjectTaskLimits("test");
+    vi.mocked(getProjectTaskLimits).mockResolvedValue({
+      ...limits,
+      video: {
+        limit: 10, active: 0, remaining: 10,
+        user_limit: 10, user_active: 0, user_remaining: 10,
+      },
+    });
+    const store = useCanvasStore.getState();
+    const videoIds = Array.from({ length: 11 }, (_, index) => store.addNode(
+      CANVAS_NODE_TYPES.video, { x: index * 360, y: 0 }, { prompt: `video ${index}` },
+    ));
+    const imageIds = Array.from({ length: 4 }, (_, index) => store.addNode(
+      CANVAS_NODE_TYPES.imageGen, { x: index * 360, y: 500 }, { prompt: `image ${index}` },
+    ));
+    const events: Array<{ nodeId: string; requestId?: string; action: string }> = [];
+    let cleaningUp = false;
+    const complete = (event: typeof events[number]) => {
+      useCanvasStore.getState().updateNodeData(event.nodeId, event.action === "generate_video"
+        ? { videoUrl: `/static/${event.nodeId}.mp4` }
+        : { imageUrl: `/static/${event.nodeId}.png` });
+      canvasEventBus.publish("freezone/node-action-result", {
+        requestId: event.requestId!,
+        nodeId: event.nodeId,
+        action: event.action,
+        status: "success",
+        output: event.action === "generate_video"
+          ? { video_url: `/static/${event.nodeId}.mp4` }
+          : { image_url: `/static/${event.nodeId}.png` },
+      });
+    };
+    const unsubscribe = canvasEventBus.subscribe("freezone/run-node-action", (event) => {
+      events.push(event);
+      canvasEventBus.publish("freezone/node-action-accepted", {
+        requestId: event.requestId!,
+        nodeId: event.nodeId,
+        action: event.action,
+      });
+      if (cleaningUp) complete(event);
+    });
+    const videos = () => events.filter((event) => event.action === "generate_video");
+    const images = () => events.filter((event) => event.action === "generate_image");
+    const execution = applyCanvasChatCommandsAsync(
+      extractCanvasChatCommandEnvelopes([{
+        schema_version: CANVAS_CHAT_COMMANDS_SCHEMA_VERSION,
+        commands: [...videoIds, ...imageIds].map((nodeId) => ({
+          type: "run_node_action" as const,
+          node_id: nodeId,
+          action: videoIds.includes(nodeId) ? "generate_video" : "generate_image",
+        })),
+      }]),
+      { canvasId: "canvas-video-capacity", actionTimeoutMs: 5_000 },
+    );
+    try {
+      await vi.waitFor(() => {
+        expect(videos()).toHaveLength(10);
+        expect(images()).toHaveLength(3);
+      }, { timeout: 2_000 });
+      complete(images()[0]);
+      await vi.waitFor(() => expect(images()).toHaveLength(4));
+      expect(videos()).toHaveLength(10);
+      complete(videos()[0]);
+      await vi.waitFor(() => expect(videos()).toHaveLength(11));
+    } finally {
+      cleaningUp = true;
+      for (const event of events) complete(event);
+      const result = await execution;
+      unsubscribe();
+      expect(result.errors).toEqual([]);
+    }
+  }, 15_000);
+
   it("does not claim the node generation lock before the node accepts a workflow action", async () => {
     const store = useCanvasStore.getState();
     const imageNodeId = store.addNode(
@@ -7015,7 +7200,7 @@ describe("canvas chat commands", () => {
     }
   });
 
-  it("runs up to three independent video actions in parallel", async () => {
+  it("runs four independent videos below the ten-video frontend limit", async () => {
     const store = useCanvasStore.getState();
     const nodeIds = Array.from({ length: 4 }, (_, index) => store.addNode(
       CANVAS_NODE_TYPES.video,
@@ -7053,14 +7238,9 @@ describe("canvas chat commands", () => {
         { canvasId: "canvas-a", actionTimeoutMs: 1_000 },
       );
 
-      await vi.waitFor(() => expect(events).toHaveLength(3));
-      await Promise.resolve();
-      expect(events.map(({ nodeId }) => nodeId)).toEqual(nodeIds.slice(0, 3));
-
-      completeAction(events[0]);
       await vi.waitFor(() => expect(events).toHaveLength(4));
-      expect(events[3].nodeId).toBe(nodeIds[3]);
-      for (const event of events.slice(1)) completeAction(event);
+      expect(events.map(({ nodeId }) => nodeId)).toEqual(nodeIds);
+      for (const event of events) completeAction(event);
 
       const result = await resultPromise;
       expect(result.errors).toEqual([]);

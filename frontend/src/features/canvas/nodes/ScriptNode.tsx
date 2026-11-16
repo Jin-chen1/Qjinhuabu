@@ -36,6 +36,7 @@ import {
   isExportImageNode,
   isImageEditNode,
   isImageGenNode,
+  isScriptNode,
   isTextAnnotationNode,
   isUploadNode,
   isVideoNode,
@@ -226,6 +227,7 @@ interface ScriptReference {
   thumbUrl?: string | null;
   /** text 节点的内容（提交时拼接到 source_text）；其它节点不需要。 */
   text?: string | null;
+  invalidScript?: boolean;
   /** video 节点：视频源 URL，用于 hover 预览的 <video>。 */
   videoUrl?: string | null;
   /** video 节点：视频总时长（秒），提交时作为 duration_sec 提升时间戳精度。 */
@@ -235,6 +237,20 @@ interface ScriptReference {
 }
 
 function classifyUpstreamNode(node: CanvasNode): ScriptReference | null {
+  if (isScriptNode(node)) {
+    const data = node.data;
+    const result = data.scriptResult;
+    const valid = isScriptResult(result) && result.rows.length > 0 &&
+      !data.scriptResultStale && !data.workflowResultStale &&
+      !data.isGenerating && !data.generationError;
+    return {
+      nodeId: node.id,
+      kind: 'text',
+      text: valid ? JSON.stringify(result, null, 2) : '',
+      invalidScript: !valid,
+      displayName: data.displayName ?? null,
+    };
+  }
   if (isTextAnnotationNode(node)) {
     return {
       nodeId: node.id,
@@ -316,6 +332,12 @@ function useScriptStorySubmit(
     if (!project) {
       console.error('[script-node] submit: no project in URL');
       updateNodeData(nodeId, { generationError: t('node.scriptNode.error.missingProject') });
+      return false;
+    }
+    if (references.some((ref) => ref.invalidScript)) {
+      updateNodeData(nodeId, {
+        generationError: '上游脚本未生成、已失效或生成失败，请先重新生成上游脚本。',
+      });
       return false;
     }
 

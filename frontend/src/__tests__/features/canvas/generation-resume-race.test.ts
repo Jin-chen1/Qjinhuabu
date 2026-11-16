@@ -23,6 +23,7 @@ import {
 const listTasks = vi.fn();
 const awaitTaskCompletion = vi.fn();
 const fetchFreezoneTextGenerateResult = vi.fn();
+const fetchFreezoneStoryScriptResult = vi.fn();
 const resumePersistedHtmlGeneration = vi.fn();
 
 vi.mock("@/api/tasks", async (importOriginal) => {
@@ -37,7 +38,7 @@ vi.mock("@/api/tasks", async (importOriginal) => {
 vi.mock("@/api/ops", () => ({
   fetchFreezoneJobResult: vi.fn().mockResolvedValue({ url: "out.png" }),
   fetchFreezoneReversePromptResult: vi.fn(),
-  fetchFreezoneStoryScriptResult: vi.fn(),
+  fetchFreezoneStoryScriptResult: (...args: unknown[]) => fetchFreezoneStoryScriptResult(...args),
   fetchFreezoneTextGenerateResult: (...args: unknown[]) => fetchFreezoneTextGenerateResult(...args),
 }));
 
@@ -114,6 +115,30 @@ function resumableComposeNode(extra: Record<string, unknown> = {}): CanvasNode {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(console, "warn").mockImplementation(() => {});
+});
+
+it("恢复完成的新脚本清除失效状态，使严格视频可使用", async () => {
+  const taskKey = "freezone_story_script:script-job";
+  listTasks.mockResolvedValue([{ task_key: taskKey, status: "running" }]);
+  awaitTaskCompletion.mockResolvedValue({ task_key: taskKey, status: "completed" });
+  const result = { title: "Fresh", rows: [{ duration: 5, shot_prompt: "orbit" }] };
+  fetchFreezoneStoryScriptResult.mockResolvedValue(result);
+  const updateNodeData = vi.fn();
+  await resumeNodeGeneration({
+    node: {
+      ...resumableNode(),
+      type: CANVAS_NODE_TYPES.script,
+      data: {
+        generationTaskKey: taskKey, generationTaskType: "freezone_story_script",
+        generationTaskJobId: "script-job", isGenerating: true,
+        scriptResultStale: true, workflowResultStale: true,
+      },
+    } as unknown as CanvasNode,
+    projectId: "demo", updateNodeData,
+  });
+  expect(updateNodeData.mock.calls[updateNodeData.mock.calls.length - 1]?.[1]).toMatchObject({
+    scriptResult: result, scriptResultStale: false, workflowResultStale: false,
+  });
 });
 
 describe("恢复路径：列表漏项不等于任务不存在", () => {

@@ -36,7 +36,7 @@ export function readStrictScriptVideoPrompt(
   if (script.generationError || script.syncStatus === 'error') {
     throw new Error('脚本生成失败，请先重新生成脚本。');
   }
-  if (script.scriptResultStale === true || script.syncStatus === 'stale') {
+  if (script.scriptResultStale === true || script.workflowResultStale === true || script.syncStatus === 'stale') {
     throw new Error('脚本已失效，请先重新生成脚本。');
   }
   const result = script.scriptResult;
@@ -53,4 +53,23 @@ export function readStrictScriptVideoPrompt(
     if (!content.length) throw new Error('脚本包含空分镜。');
     return content.join('\n');
   }).join('\n\n');
+}
+
+/** Strict video duration comes from all script rows, never the video form default. */
+export function readStrictScriptVideoDuration(
+  data: Record<string, unknown>,
+  upstreamNodes: readonly { id: string; type?: string; data: Record<string, unknown> }[],
+): number | null {
+  if (readStrictScriptVideoPrompt(data, upstreamNodes) === null) return null;
+  const source = upstreamNodes.find((node) => node.id === data.strictScriptSourceNodeId)!;
+  const rows = (source.data.scriptResult as { rows: Record<string, unknown>[] }).rows;
+  const total = rows.reduce((sum, row) => {
+    const duration = row.duration;
+    if (typeof duration !== 'number' || !Number.isFinite(duration) || duration <= 0) {
+      throw new Error('脚本分镜时长无效，请先补齐脚本时长。');
+    }
+    return sum + duration;
+  }, 0);
+  if (!Number.isFinite(total)) throw new Error('脚本总时长无效。');
+  return total;
 }

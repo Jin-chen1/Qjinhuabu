@@ -3,7 +3,7 @@
 import { selectVideoModel } from "@/features/canvas/domain/catalogVideoModels";
 import { missingVideoKeyframeSlots } from "@/features/canvas/application/videoContinuation";
 import { compileWorkflowNodePrompt } from "@/features/canvas/application/workflowRecipeRuntime";
-import { readStrictScriptVideoPrompt } from "@/features/canvas/application/strictScriptVideo";
+import { readStrictScriptVideoDuration, readStrictScriptVideoPrompt } from "@/features/canvas/application/strictScriptVideo";
 import {
   memo,
   useCallback,
@@ -232,6 +232,7 @@ import {
 import { useFreezoneVideoCameraTemplates } from "@/features/canvas/hooks/useFreezoneVideoCameraTemplates";
 import { useFreezoneVideoModels } from "@/features/canvas/hooks/useFreezoneVideoModels";
 import { useCanvasStore, useIsBoxSelecting } from "@/stores/canvasStore";
+import { compositionResultVideoData, isCompositionResultVideo, isVideoGenerationBlocked, videoPlaybackUrl } from "@/features/canvas/application/videoCompositionProvenance";
 import { ReferenceValidationDialog, referenceDurationIssues, referenceIssues, matchesReference, referenceIssueName, type ReferenceIssue } from "./shared/ReferenceValidationDialog";
 import { useCanvasPickStore } from "@/stores/canvasPickStore";
 import { commitVideoPickToNode } from "@/features/canvas/application/videoBreakdownLanding";
@@ -667,6 +668,19 @@ export const VideoNode = memo(
       (state) => state.addDerivedUploadNode,
     );
     const addNode = useCanvasStore((state) => state.addNode);
+    const isCompositionResult = useCanvasStore((state) =>
+      isCompositionResultVideo(id, state, data),
+    );
+    const isGenerationBlocked = useCanvasStore((state) =>
+      isVideoGenerationBlocked(id, state, data),
+    );
+    const compositionSource = useCanvasStore((state) => {
+      const sourceId = compositionResultVideoData(id, state, data).composeSourceNodeId;
+      return state.nodes.find((node) => node.id === sourceId);
+    });
+    const playbackUrl = useCanvasStore((state) => videoPlaybackUrl(id, state, data));
+    const compositionPlaybackUrl = isCompositionResult && playbackUrl
+      ? resolveImageDisplayUrl(playbackUrl) : null;
     const addEdge = useCanvasStore((state) => state.addEdge);
     const addEdgeWithData = useCanvasStore((state) => state.addEdgeWithData);
     const setActiveOverlayNodeId = useCanvasStore(
@@ -1433,6 +1447,7 @@ export const VideoNode = memo(
           videoUrl: url,
           aspectRatio: data.aspectRatio,
           user_spawned: true,
+          ...compositionResultVideoData(id, useCanvasStore.getState(), data),
         } as Partial<VideoNodeData>);
         setSelectedNode(newNodeId);
       },
@@ -2014,10 +2029,11 @@ export const VideoNode = memo(
     );
 
     const videoSource = useMemo(() => {
-      if (data.videoUrl) return resolveImageDisplayUrl(data.videoUrl);
+      if (isCompositionResult) return null;
+      if (playbackUrl) return resolveImageDisplayUrl(playbackUrl);
       if (transientPreviewUrl) return transientPreviewUrl;
       return null;
-    }, [data.videoUrl, transientPreviewUrl]);
+    }, [playbackUrl, transientPreviewUrl, isCompositionResult]);
 
     // 预览专用 src：preload="metadata" 不会绘制任何一帧，又没有 poster，画布上
     // 就是一个纯黑框（视频本身正常，下载可看）。追加 `#t=0.1` 媒体片段，让浏览器
@@ -2474,6 +2490,7 @@ export const VideoNode = memo(
       (videoModeRequiresMedia(genMode) && !hasRequiredMediaForMode);
 
     const handleSubmit = useCallback(async () => {
+      if (isVideoGenerationBlocked(id, useCanvasStore.getState(), data)) return;
       if (submitDisabled) return;
       // 在途守卫（与 ImageGenNode 一致）：第 1 条完成就会清 isGenerating，
       // submitDisabled 拦不住「旧批次 N-1 个任务还在跑时重新提交」——旧闭包
@@ -2649,7 +2666,14 @@ export const VideoNode = memo(
           return false;
         };
 
-        const durationClamped = clampVideoDuration(durationSec, durationBounds);
+        const strictDuration = readStrictScriptVideoDuration(
+          freshNodeData,
+          upstreamNodesInEdgeOrder(freshState.nodes, freshState.edges, id),
+        );
+        const durationClamped = clampVideoDuration(strictDuration ?? durationSec, durationBounds);
+        if (strictDuration !== null && durationClamped !== strictDuration) {
+          throw new Error("脚本总时长超出当前模型支持范围，请调整脚本或模型。");
+        }
         const cameraTemplateId = strictPrompt !== null ? null : cameraMovementId;
         const submitSceneOptimize = strictPrompt !== null ? null : sceneOptimize ?? null;
         // 后端按 canvas_id + node_id 记录每个节点的生成历史。多条生成时每个
@@ -3349,7 +3373,7 @@ export const VideoNode = memo(
       // 截「续写前置视频」时底下那块位置让给续写轨道，跟剪辑条一个道理。
       !isExtendPickMode &&
       !subtitleEraseMode &&
-      !data.referenceOnly &&
+      !isGenerationBlocked &&
       // 视频高清节点用自己的 VideoUpscaleEditorOverlay 配置面板，不走常规生成面板。
       !data.isUpscaleNode;
 
@@ -3598,7 +3622,33 @@ export const VideoNode = memo(
           {/* 低缩放档：<video> 换成静态图/占位块。每个 <video> 都是一个独立
               合成层，数量随可见节点数线性增长——实测 69 节点 / zoom 0.1 下，
               只有连同视频层一起降级才能把 p90 帧时从 26ms 拉回 14ms。 */}
-          {!isGenerating &&
+          {isCompositionResult ? (
+            <div className="nodrag nopan flex h-full flex-col items-center justify-center gap-2 p-3">
+              <span className="text-xs text-text-muted">
+                {compositionSource?.data.workflowResultStale
+                  ? "上游素材已更新，当前播放的是旧成片"
+                  : "合成成片（随上游合成结果更新）"}
+              </span>
+              {compositionPlaybackUrl ? (
+                <video src={compositionPlaybackUrl} controls playsInline preload="metadata"
+                  className="min-h-0 w-full flex-1 object-contain" />
+              ) : (
+                <span className="text-xs text-text-muted">
+                  上游暂无合成结果；原节点媒体保留，不作为合成结果展示
+                </span>
+              )}
+              {compositionSource && (
+                <button type="button" className="text-xs text-text-dark"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setSelectedNode(compositionSource.id);
+                    useCanvasStore.getState().requestFocusNode(compositionSource.id);
+                  }}>
+                  {compositionSource.data.workflowResultStale ? "前往合成入口更新成片" : "返回合成入口"}
+                </button>
+              )}
+            </div>
+          ) : !isGenerating &&
           !isUploading &&
           videoSource &&
           lowDetailZoom &&
@@ -3748,7 +3798,7 @@ export const VideoNode = memo(
                 <RegenerateButton
                   onClick={() => void handleSubmit()}
                   busy={isGenerating}
-                  disabled={submitDisabled}
+                  disabled={submitDisabled || isGenerationBlocked}
                 />
               </div>
             </div>
@@ -4126,7 +4176,7 @@ export const VideoNode = memo(
           // 让位——它是按 panelHeight 往下推的，操作面板不在时会浮在半空。
           !isExtendPickMode &&
           !subtitleEraseMode &&
-          !data.referenceOnly &&
+          !isGenerationBlocked &&
           hasCompletedHistoryRecords(historyRecords) && (
             <div
               className={`nodrag absolute z-[300] rounded-[var(--node-radius)] ${CANVAS_NODE_OPS_PANEL_CLASS} ${NODE_OPS_PANEL_ENTER_CLASS} px-3 py-2`}

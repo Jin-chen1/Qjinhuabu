@@ -68,7 +68,6 @@ type VideoComposeNodeProps = NodeProps & {
 
 const NODE_WIDTH = 240;
 const NODE_HEIGHT = 136;
-const MIN_UPSTREAM_VIDEOS = 2;
 const MIN_AUTO_COMPOSE_VIDEOS = 1;
 const MIN_AUTO_COMPOSE_MEDIA = 2;
 
@@ -92,9 +91,9 @@ export const VideoComposeNode = memo(
         ).length,
       [upstreamNodes],
     );
-    const canOpen = videoCount >= MIN_UPSTREAM_VIDEOS;
     const canAutoCompose =
       videoCount >= MIN_AUTO_COMPOSE_VIDEOS && seedNodeIds.length >= MIN_AUTO_COMPOSE_MEDIA;
+    const canOpen = canAutoCompose;
 
     const resolvedTitle = useMemo(
       () => localizeNodeDisplayName(CANVAS_NODE_TYPES.videoCompose, data, t),
@@ -198,6 +197,7 @@ export const VideoComposeNode = memo(
           store.updateNodeData(existingResult.id, {
             videoUrl: result.url,
             previewImageUrl: resultCoverUrl,
+            referenceOnly: true,
           });
         } else {
           const position = store.findNodePosition(id, 580, 380);
@@ -207,6 +207,7 @@ export const VideoComposeNode = memo(
             displayName: t("videoCompose.node.resultName"),
             sourceFileName: null,
             composeSourceNodeId: id,
+            referenceOnly: true,
           } as Partial<CanvasNodeData>);
           store.addEdge(id, resultNodeId);
         }
@@ -219,6 +220,8 @@ export const VideoComposeNode = memo(
           resolution: timeline.resolution,
           draftTimeline: timeline,
           generationError: null,
+          workflowResultStale: false,
+          workflowInvalidationReason: null,
         });
         return output;
       } catch (error) {
@@ -260,7 +263,7 @@ export const VideoComposeNode = memo(
         if (action === "open_video_compose_modal") {
           publishNodeActionAccepted(requestId, id, action);
           if (!handleOpen()) {
-            publishNodeActionError(requestId, id, action, "视频合成至少需要 2 个已完成视频输入");
+            publishNodeActionError(requestId, id, action, "视频合成至少需要 1 个视频和共计 2 个已完成媒体节点");
             return;
           }
           publishNodeActionSuccess(requestId, id, action, { openedUiAction: true });
@@ -318,10 +321,12 @@ export const VideoComposeNode = memo(
               }}
               className="flex h-10 w-full items-center justify-center rounded-[12px] border border-white/15 bg-white/[0.04] px-4 text-center text-[13px] text-text-dark transition-colors hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-45"
             >
-              {t("videoCompose.node.open")}
+              {data.workflowResultStale ? "使用最新素材更新成片" : t("videoCompose.node.open")}
             </button>
             <span className="text-[12px] text-text-muted/90">
-              {t("videoCompose.node.hint", { min: MIN_UPSTREAM_VIDEOS })}
+              {data.workflowResultStale ? "成片已过期；打开后点击导出，合成最新视频和音轨" : t("videoCompose.node.mediaHint", {
+                defaultValue: "至少连接 1 个视频和共计 2 个已完成媒体节点",
+              })}
             </span>
           </div>
         </div>
@@ -349,6 +354,7 @@ export const VideoComposeNode = memo(
                 displayName: t("videoCompose.node.resultName"),
                 sourceFileName: null,
                 composeSourceNodeId: id,
+                referenceOnly: true,
               } as Partial<CanvasNodeData>);
               store.addEdge(id, newId);
               store.setSelectedNode(newId);
@@ -356,6 +362,8 @@ export const VideoComposeNode = memo(
               updateNodeData(id, {
                 resultVideoUrl: url,
                 previewImageUrl: coverUrl,
+                workflowResultStale: false,
+                workflowInvalidationReason: null,
               });
               setEditorOpen(false);
             }}
