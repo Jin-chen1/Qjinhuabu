@@ -39,3 +39,9 @@ GitHub Actions 源文件保留在 `.github/workflow-templates/`，当前未启�
 ## 许可证
 
 本项目包含 DramaClaw 上游代码。使用与分发请遵守根目录 `NOTICE`、`LICENSES/`、`REUSE.toml` 和各组件的许可证说明。
+
+## 致敬原项目
+
+Q金画布基于 [DramaClaw 原项目](https://github.com/dramaclaw/dramaclaw) 进行扩展与适配。感谢原项目作者、维护者及所有贡献者在画布创作、视频生成和任务编排方面的工作，为本项目提供了基础。
+
+向原项目及其贡献者致敬。欢迎访问原项目仓库，了解项目进展并支持原作者。
